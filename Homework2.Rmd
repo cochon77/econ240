@@ -1,0 +1,62 @@
+---
+title: "Homework2"
+author: "Colin Pi"
+date: '2019 4 14 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readxl)
+library(dplyr)
+library(tidyr)
+
+hdr <- read_excel("~/Documents/2018-19/ECON240/2018_all_indicators.xlsx")
+
+data.2018 <- hdr %>% select(3,4,34) %>% 
+  filter(indicator_name %in% c("Human Development Index (HDI)", "Multidimensional poverty index (MPI)", "Inequality-adjusted HDI (IHDI)", "Gross national income (GNI) per capita (2011 PPP $)")) %>% rename("values"=`9999`)
+
+narrow <- function(i){
+  outcome <- gather(data.2018 %>% filter(indicator_name == i), key = i, value = values, 3) %>% select(-3)
+  return(outcome)
+}
+
+country <- unlist(narrow("Multidimensional poverty index (MPI)")$iso3)
+country <- unlist((narrow("Inequality-adjusted HDI (IHDI)") %>% filter(iso3 %in% country))$iso3)
+
+narrow.data <- bind_cols(narrow("Human Development Index (HDI)") %>% filter(iso3 %in% country) %>% select(3) %>% rename(hdi=values),
+narrow("Multidimensional poverty index (MPI)") %>% filter(iso3 %in% country) %>% select(3) %>% rename(mpi=values),
+narrow("Inequality-adjusted HDI (IHDI)") %>% filter(iso3 %in% country) %>% select(3) %>% rename(ihdi=values),
+narrow("Gross national income (GNI) per capita (2011 PPP $)") %>% filter(iso3 %in% country) %>% select(3) %>% rename(income=values))
+```
+
+```{r}
+library(ggplot2)
+
+ggplot(narrow.data, aes(x = hdi, y = mpi)) +
+  geom_point() +
+  xlab("HDI") + 
+  ylab("MPI") + 
+  labs(title="HDI v. MPI")
+```
+
+```{r}
+ggplot(narrow.data, aes(x = ihdi, y = mpi)) +
+  geom_point() +
+  xlab("IHDI") + 
+  ylab("MPI") +
+  labs(title="IHDI v. MPI")
+```
+
+```{r}
+ggplot(narrow.data, aes(x = income, y = mpi)) +
+  geom_point() +
+  coord_trans(x = "log") +
+    xlab("GNI per capita, in log") + 
+  ylab("MPI") +
+  labs(title="GNI per capita v. MPI")
+```
+
